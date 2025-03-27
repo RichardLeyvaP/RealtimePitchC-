@@ -2,6 +2,8 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "xstring": "cpp",
+        "fstream": "cpp"
     }
 }
