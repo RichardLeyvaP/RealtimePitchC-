@@ -1,0 +1,7 @@
+[
+{
+  "directory": "D:/TRABAJO-BRASIL/TRABAJO-FRELANCER/Solano/singing_app/android/app/.cxx/Debug/3b5m5a57/x86_64",
+  "command": "C:\\Users\\richa\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=x86_64-none-linux-android24 --sysroot=C:/Users/richa/AppData/Local/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dnative_lib_EXPORTS -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -o CMakeFiles\\native-lib.dir\\native-lib.cpp.o -c D:\\TRABAJO-BRASIL\\TRABAJO-FRELANCER\\Solano\\singing_app\\android\\app\\src\\main\\cpp\\native-lib.cpp",
+  "file": "D:\\TRABAJO-BRASIL\\TRABAJO-FRELANCER\\Solano\\singing_app\\android\\app\\src\\main\\cpp\\native-lib.cpp"
+}
+]
