@@ -10,8 +10,37 @@ import 'package:singing_app/ui/homeScreen.dart';
 
 import 'package:flutter/material.dart';
 
-void main() {
+
+
+
+import 'dart:ffi'; // Para FFI
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+
+typedef AnalyzeWavFunc = Void Function(Pointer<Utf8>);
+typedef AnalyzeWav = void Function(Pointer<Utf8>);
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Necesario para usar path_provider
+  String tempFilePath = await copyAssetToTemp('assets/vocals/HEALTH_CHECK.wav');
+  
+  final dylib = DynamicLibrary.open('libnative-lib.so'); // Nombre de la biblioteca C++
+  final analyzeWav = dylib.lookupFunction<AnalyzeWavFunc, AnalyzeWav>('analyzeWav');
+
+  analyzeWav(tempFilePath.toNativeUtf8()); // Llamar a la función C++
+
   runApp(MyApp());
+}
+
+Future<String> copyAssetToTemp(String assetPath) async {
+  final ByteData data = await rootBundle.load(assetPath);
+  final Directory tempDir = await getTemporaryDirectory();
+  final File tempFile = File('${tempDir.path}/HEALTH_CHECK.wav');
+  await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
+  return tempFile.path;
 }
 
 class MyApp extends StatelessWidget {
@@ -21,12 +50,63 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(title: Text("Flutter + C++")),
         body: Center(
-          child: Text(stringFromCpp().toDartString()), // Mostrar mensaje C++
+          child: Text("Archivo de audio procesado"), // Mensaje de confirmación
         ),
       ),
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// void main() {
+//   runApp(MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: Scaffold(
+//         appBar: AppBar(title: Text("Flutter + C++")),
+//         body: Center(
+//           child: Text('stringFromCpp().toDartString()'), // Mostrar mensaje C++
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
+
 
 
 
