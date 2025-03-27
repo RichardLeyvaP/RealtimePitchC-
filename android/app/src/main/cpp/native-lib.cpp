@@ -1,18 +1,9 @@
-
-
-// #include <string>
-
-// extern "C" {
-//     const char* stringFromCpp() {
-//         return "Hola desde C++ en Flutter!";
-//     }
-// }
-
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cmath>
-#include <complex> // Faltaba incluir esta librería
+#include <complex>
+#include <sstream>
 
 using namespace std;
 
@@ -34,10 +25,7 @@ struct WAVHeader {
 
 vector<short> readWavData(const string &filename, WAVHeader &header) {
     ifstream file(filename, ios::binary);
-    if (!file) {
-        cerr << "Error al abrir el archivo WAV." << endl;
-        return {};
-    }
+    if (!file) return {};
     
     file.read(reinterpret_cast<char*>(&header), sizeof(WAVHeader));
     
@@ -47,7 +35,6 @@ vector<short> readWavData(const string &filename, WAVHeader &header) {
     return samples;
 }
 
-// FFT (Cooley-Tukey) para analizar frecuencias
 void fft(vector<complex<double>> &data) {
     int n = data.size();
     if (n <= 1) return;
@@ -67,7 +54,6 @@ void fft(vector<complex<double>> &data) {
     }
 }
 
-// Encuentra la frecuencia principal en el espectro
 double getPitch(const vector<short> &samples, int sampleRate) {
     int n = samples.size();
     vector<complex<double>> complexSamples(n);
@@ -88,7 +74,6 @@ double getPitch(const vector<short> &samples, int sampleRate) {
     return (double)peakIndex * sampleRate / n;
 }
 
-// Convierte una frecuencia en Hz a una nota musical
 string getNoteFromPitch(double frequency) {
     string notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     if (frequency <= 0) return "Unknown";
@@ -99,19 +84,23 @@ string getNoteFromPitch(double frequency) {
 }
 
 extern "C" {
-    void analyzeWav(const char* filename) {
+    const char* analyzeWav(const char* filename) {
         WAVHeader header;
         vector<short> samples = readWavData(filename, header);
-        if (samples.empty()) {
-            cerr << "No se pudo leer el archivo WAV correctamente." << endl;
-            return;
-        }
+        if (samples.empty()) return "Error al leer el archivo WAV";
+
         double pitch = getPitch(samples, header.sample_rate);
         string note = getNoteFromPitch(pitch);
         double duration = (double)samples.size() / header.sample_rate;
-        
-        cout << "Pitch: " << pitch << " Hz" << endl;
-        cout << "Note: " << note << endl;
-        cout << "Duration: " << duration << " sec" << endl;
+
+        // Guardar el resultado en un string estático (para evitar pérdida de memoria)
+        static string result;
+        stringstream ss;
+        ss << "Pitch: " << pitch << " Hz\n";
+        ss << "Note: " << note << "\n";
+        ss << "Duration: " << duration << " sec\n";
+        result = ss.str();
+
+        return result.c_str();
     }
 }

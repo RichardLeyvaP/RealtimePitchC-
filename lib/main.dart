@@ -1,38 +1,25 @@
-import 'package:ffi/ffi.dart';
-import 'package:flutter/material.dart';
-import 'package:singing_app/core/dependencies/dependencies.dart';
-import 'package:singing_app/core/services/requestPermissions.service.dart';
-import 'package:singing_app/native/native_bindings.dart';
-import 'package:singing_app/singing_app.dart';
-import 'package:singing_app/ui/homeScreen.dart';
-
-
-
-import 'package:flutter/material.dart';
-
-
-
-
 import 'dart:ffi'; // Para FFI
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-typedef AnalyzeWavFunc = Void Function(Pointer<Utf8>);
-typedef AnalyzeWav = void Function(Pointer<Utf8>);
+typedef AnalyzeWavFunc = Pointer<Utf8> Function(Pointer<Utf8>);
+typedef AnalyzeWav = Pointer<Utf8> Function(Pointer<Utf8>);
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Necesario para usar path_provider
+  WidgetsFlutterBinding.ensureInitialized();
   String tempFilePath = await copyAssetToTemp('assets/vocals/HEALTH_CHECK.wav');
   
-  final dylib = DynamicLibrary.open('libnative-lib.so'); // Nombre de la biblioteca C++
+  final dylib = DynamicLibrary.open('libnative-lib.so'); 
   final analyzeWav = dylib.lookupFunction<AnalyzeWavFunc, AnalyzeWav>('analyzeWav');
 
-  analyzeWav(tempFilePath.toNativeUtf8()); // Llamar a la función C++
+  Pointer<Utf8> resultPtr = analyzeWav(tempFilePath.toNativeUtf8()); 
+  String result = resultPtr.toDartString(); 
 
-  runApp(MyApp());
+  runApp(MyApp(result: result));
 }
 
 Future<String> copyAssetToTemp(String assetPath) async {
@@ -44,19 +31,28 @@ Future<String> copyAssetToTemp(String assetPath) async {
 }
 
 class MyApp extends StatelessWidget {
+  final String result;
+  MyApp({required this.result});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: Text("Flutter + C++")),
         body: Center(
-          child: Text("Archivo de audio procesado"), // Mensaje de confirmación
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Archivo de audio procesado"),
+              SizedBox(height: 20),
+              Text(result, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
 
 
 
