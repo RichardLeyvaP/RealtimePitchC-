@@ -1,106 +1,180 @@
-
-
-import 'dart:ffi';
-import 'dart:io';
-import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:singing_app/services/audio_converter.service.dart';
 
-base class PitchResult extends Struct {
-  @Double()
-  external double pitch;
-  
-  @Double()
-  external double duration;
-  
-  external Pointer<Utf8> note;
+class ConvertAudioPage extends StatefulWidget {
+  @override
+  _ConvertAudioPageState createState() => _ConvertAudioPageState();
 }
 
-// Función para obtener la nota como String
-String getNoteFromPitchResult(PitchResult result) {
-  return result.note.toDartString();
-}
+class _ConvertAudioPageState extends State<ConvertAudioPage> {
+  final List<String> audioFiles = [
+    'assets/vocals/HEALTH_CHECK.mp3',
+    'assets/vocals/MIA_MIA_MIA.mp3',
+    'assets/vocals/SUSTAINED_DESCENDING.mp3'
+  ];
 
-typedef AnalyzeWavFunc = Pointer<PitchResult> Function(Pointer<Utf8>, Pointer<Int32>);
-typedef AnalyzeWav = Pointer<PitchResult> Function(Pointer<Utf8>, Pointer<Int32>);
+  String? convertedFilePath;
 
-typedef FreeResultsFunc = Void Function(Pointer<PitchResult>, Int32);
-typedef FreeResults = void Function(Pointer<PitchResult>, int);
+  Future<dynamic> convertAudio(String assetPath) async {
+    final audioConverterService = AudioConverterService();
+    String? wavPath = await audioConverterService.convertMp3ToWav(assetPath);
 
-class AudioPitch {
-  final double pitch;
-  final String note;
-  final double duration;
-
-  AudioPitch(this.pitch, this.note, this.duration);
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  String tempFilePath = await copyAssetToTemp('assets/vocals/sample-15s.wav');
-
-  final dylib = DynamicLibrary.open('libnative-lib.so');
-  final analyzeWav = dylib.lookupFunction<AnalyzeWavFunc, AnalyzeWav>('analyzeWav');
-  final freeResults = dylib.lookupFunction<FreeResultsFunc, FreeResults>('freeResults');
-
-  final resultCount = calloc<Int32>();
-  final filePathPtr = tempFilePath.toNativeUtf8();
-
-  final resultsPtr = analyzeWav(filePathPtr, resultCount);
-  final count = resultCount.value;
-
-  List<AudioPitch> pitches = [];
-  if (count > 0) {
-    for (int i = 0; i < count; i++) {
-      final result = resultsPtr.elementAt(i).ref;
-      pitches.add(AudioPitch(
-        result.pitch,
-        getNoteFromPitchResult(result),
-        result.duration,
-      ));
+    return wavPath;
     }
-  }
-
-  freeResults(resultsPtr, count);
-  calloc.free(resultCount);
-  calloc.free(filePathPtr);
-
-  runApp(MyApp(pitches));
-}
-
-Future<String> copyAssetToTemp(String assetPath) async {
-  final ByteData data = await rootBundle.load(assetPath);
-  final Directory tempDir = await getTemporaryDirectory();
-  final File tempFile = File('${tempDir.path}/HEALTH_CHECK.wav');
-  await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
-  return tempFile.path;
-}
-
-class MyApp extends StatelessWidget {
-  final List<AudioPitch> pitches;
-
-  MyApp(this.pitches);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: Text("Audio Pitch Analyzer")),
-        body: ListView.builder(
-          itemCount: pitches.length,
-          itemBuilder: (context, index) {
-            final pitch = pitches[index];
-            return ListTile(
-              title: Text("Note: ${pitch.note}"),
-              subtitle: Text("Pitch: ${pitch.pitch.toStringAsFixed(2)} Hz - Duration: ${pitch.duration.toStringAsFixed(4)} sec"),
-            );
-          },
-        ),
+    return Scaffold(
+      appBar: AppBar(title: Text('Seleccionar MP3 y Convertir a WAV')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: audioFiles.length,
+              itemBuilder: (context, index) {
+                String fileName = audioFiles[index].split('/').last;
+                return ListTile(
+                  title: Text(fileName),
+                  trailing: Icon(Icons.audiotrack),
+                  onTap: () async {
+                  String? audioConvert = await convertAudio(audioFiles[index]);
+                  if (audioConvert != null) {
+                    //llamo la funcion de c++
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('llamar a la funcion de c++')),
+                    );
+                  } else {
+                    //muestro mensaje de error
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al convertir el archivo')),
+                    );
+                    
+                  }
+                  },
+                );
+              },
+            ),
+          ),
+        
+        ],
       ),
     );
   }
 }
+
+void main() {
+  runApp(MaterialApp(
+    home: ConvertAudioPage(),
+  ));
+}
+
+
+
+
+
+//CODIGO FUNCONANDO PARA LA DETECCION DE TONO EN TIEMPO REAL
+// CODIGO PARA LA DETECCION DE TONO EN TIEMPO REAL CON FLUTTER Y C++
+// import 'dart:ffi';
+// import 'dart:io';
+// import 'package:ffi/ffi.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+// import 'package:path_provider/path_provider.dart';
+
+// base class PitchResult extends Struct {
+//   @Double()
+//   external double pitch;
+  
+//   @Double()
+//   external double duration;
+  
+//   external Pointer<Utf8> note;
+// }
+
+// // Función para obtener la nota como String
+// String getNoteFromPitchResult(PitchResult result) {
+//   return result.note.toDartString();
+// }
+
+// typedef AnalyzeWavFunc = Pointer<PitchResult> Function(Pointer<Utf8>, Pointer<Int32>);
+// typedef AnalyzeWav = Pointer<PitchResult> Function(Pointer<Utf8>, Pointer<Int32>);
+
+// typedef FreeResultsFunc = Void Function(Pointer<PitchResult>, Int32);
+// typedef FreeResults = void Function(Pointer<PitchResult>, int);
+
+// class AudioPitch {
+//   final double pitch;
+//   final String note;
+//   final double duration;
+
+//   AudioPitch(this.pitch, this.note, this.duration);
+// }
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   String tempFilePath = await copyAssetToTemp('assets/vocals/HEALTH_CHECK.wav');
+
+//   final dylib = DynamicLibrary.open('libnative-lib.so');
+//   final analyzeWav = dylib.lookupFunction<AnalyzeWavFunc, AnalyzeWav>('analyzeWav');
+//   final freeResults = dylib.lookupFunction<FreeResultsFunc, FreeResults>('freeResults');
+
+//   final resultCount = calloc<Int32>();
+//   final filePathPtr = tempFilePath.toNativeUtf8();
+
+//   final resultsPtr = analyzeWav(filePathPtr, resultCount);
+//   final count = resultCount.value;
+
+//   List<AudioPitch> pitches = [];
+//   if (count > 0) {
+//     for (int i = 0; i < count; i++) {
+//       final result = resultsPtr.elementAt(i).ref;
+//       pitches.add(AudioPitch(
+//         result.pitch,
+//         getNoteFromPitchResult(result),
+//         result.duration,
+//       ));
+//     }
+//   }
+
+//   freeResults(resultsPtr, count);
+//   calloc.free(resultCount);
+//   calloc.free(filePathPtr);
+
+//   runApp(MyApp(pitches));
+// }
+
+// Future<String> copyAssetToTemp(String assetPath) async {
+//   final ByteData data = await rootBundle.load(assetPath);
+//   final Directory tempDir = await getTemporaryDirectory();
+//   final File tempFile = File('${tempDir.path}/HEALTH_CHECK.wav');
+//   await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
+//   return tempFile.path;
+// }
+
+// class MyApp extends StatelessWidget {
+//   final List<AudioPitch> pitches;
+
+//   MyApp(this.pitches);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: Scaffold(
+//         appBar: AppBar(title: Text("Audio Pitch Analyzer")),
+//         body: ListView.builder(
+//           itemCount: pitches.length,
+//           itemBuilder: (context, index) {
+//             final pitch = pitches[index];
+//             return ListTile(
+//               title: Text("Note: ${pitch.note}"),
+//               subtitle: Text("Pitch: ${pitch.pitch.toStringAsFixed(2)} Hz - Duration: ${pitch.duration.toStringAsFixed(4)} sec"),
+//             );
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 
 

@@ -2,7 +2,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+         maven { 
+            url "https://raw.githubusercontent.com/arthenica/ffmpeg-kit/maven-repo/" 
+        }
     }
+   
 }
 
 rootProject.buildDir = "../build"

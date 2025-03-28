@@ -51,4 +51,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/vocals/
+    - assets/vocals/HEALTH_CHECK.mp3
+    - assets/vocals/MIA_MIA_MIA.mp3
+    - assets/vocals/SUSTAINED_DESCENDING.mp3

@@ -112,7 +112,7 @@ extern "C" {
         file.close();
 
         cout << "Muestras leídas: " << samples.size() << endl;
-        // ... resto del código
+        
   
         int sampleRate = header.sample_rate;
         int blockSize = 1024;

@@ -4,15 +4,19 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
+ext {
+    flutterFFmpegPackage  = "full" // O el paquete que estás usando, como "https", "audio", etc.
+}
 
 android {
     namespace = "com.example.singing_app"
+     //namespace = "com.example.flutter_ffmpeg"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion "29.0.13113456"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
@@ -28,12 +32,14 @@ android {
         targetSdk = 33
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-         externalNativeBuild {
+        
+        externalNativeBuild {
             cmake {
                 cppFlags ""
             }
         }
     }
+
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
@@ -47,7 +53,10 @@ android {
             signingConfig = signingConfigs.debug
         }
     }
+
+    
 }
+
 
 flutter {
     source = "../.."
