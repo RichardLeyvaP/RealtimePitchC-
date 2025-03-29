@@ -54,3 +54,6 @@ flutter:
     - assets/vocals/HEALTH_CHECK.mp3
     - assets/vocals/MIA_MIA_MIA.mp3
     - assets/vocals/SUSTAINED_DESCENDING.mp3
+    - assets/vocals/sample-3s.wav
+    - assets/vocals/sample-12s.wav    
+    - assets/vocals/sample-15s.wav
