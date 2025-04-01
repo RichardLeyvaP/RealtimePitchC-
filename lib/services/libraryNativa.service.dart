@@ -116,5 +116,65 @@ for (int i = 0; i < count; i++) {
  
   }
 
+  // Cargar la biblioteca compartida
+  Future<List<AudioPitch>> loadLibraryAssets(String pathWav) async {
+  String tempFilePath = pathWav;
+
+  final dylib = DynamicLibrary.open('libnative-lib.so');
+  final analyzeWav = dylib.lookupFunction<AnalyzeWavFunc, AnalyzeWav>('analyzeWav');
+  final freeResults = dylib.lookupFunction<FreeResultsFunc, FreeResults>('freeResults');
+
+  final resultCount = calloc<Int32>();
+  final filePathPtr = tempFilePath.toNativeUtf8();  
+
+final file = File(tempFilePath);
+print("🛠 Verificando archivo WAV...");
+
+if (await file.exists()) {
+  print("✅ Archivo existe. Tamaño: ${(await file.length())} bytes");
+
+  RandomAccessFile raf = await file.open(mode: FileMode.read);
+  Uint8List header = await raf.read(12); // Leer los primeros 12 bytes
+  await raf.close();
+
+  print("📄 Cabecera del archivo: ${String.fromCharCodes(header)}");
+} else {
+  print("❌ El archivo no existe.");
+}
+
+  final resultsPtr = analyzeWav(filePathPtr, resultCount);
+  final count = resultCount.value;
+List<AudioPitch> newPitches = [];
+  if (count > 0) {
+   
+
+for (int i = 0; i < count; i++) {
+  final result = resultsPtr.elementAt(i).ref;
+  newPitches.add(AudioPitch(
+    result.pitch,
+    getNoteFromPitchResult(result),
+    result.duration,
+  ));
+  
+  print("Nota: ${getNoteFromPitchResult(result)} - Pitch: ${result.pitch} Hz - Duración: ${result.duration} sec");
+}
+
+
+
+     freeResults(resultsPtr, count);
+  calloc.free(resultCount);
+  calloc.free(filePathPtr);
+    return newPitches;
+  }
+  else{
+     freeResults(resultsPtr, count);
+  calloc.free(resultCount);
+  calloc.free(filePathPtr);
+    return newPitches;
+  }
+
+ 
+  }
+
   
 }
