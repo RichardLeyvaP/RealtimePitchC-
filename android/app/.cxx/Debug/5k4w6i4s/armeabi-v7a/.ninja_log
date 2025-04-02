@@ -1,8 +1,5 @@
 # ninja log v5
-2	1378	7652645040332794	CMakeFiles/native-lib.dir/native-lib.cpp.o	e002fb47becc839c
-1387	1538	7652645041874578	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	241810ff22dba70d
-6	1118	7652664215577446	CMakeFiles/native-lib.dir/native-lib.cpp.o	1061bce33eeaad8f
-1119	1263	7652664216947076	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	cf5acdb8143b4d9b
-5	1308	7652670253897533	CMakeFiles/native-lib.dir/native-lib.cpp.o	1061bce33eeaad8f
-1309	1466	7652670255403419	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	cf5acdb8143b4d9b
-7	275	7652699752514197	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	cf5acdb8143b4d9b
+0	1437	7652969581602936	CMakeFiles/native-lib.dir/native-lib.cpp.o	1061bce33eeaad8f
+8	149	7652986417816188	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	cf5acdb8143b4d9b
+8	1176	7653011442710453	CMakeFiles/native-lib.dir/native-lib.cpp.o	dce8b3bfff2c92e2
+1177	1330	7653011444193607	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/armeabi-v7a/libnative-lib.so	9dcb957f979310c2

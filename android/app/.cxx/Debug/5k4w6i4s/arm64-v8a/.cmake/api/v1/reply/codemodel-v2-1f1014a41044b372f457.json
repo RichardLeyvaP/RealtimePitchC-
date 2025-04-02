@@ -6,7 +6,8 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-84e175af38d977b01672.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.10.0"
@@ -39,7 +40,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "native-lib::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-native-lib-Debug-4bafc6cf43d5be56ece4.json",
+					"jsonFile" : "target-native-lib-Debug-0fe925f0c80bd284eb2b.json",
 					"name" : "native-lib",
 					"projectIndex" : 0
 				}

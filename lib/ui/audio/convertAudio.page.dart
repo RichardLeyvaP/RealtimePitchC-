@@ -49,6 +49,8 @@ class _ConvertAudioPageState extends State<ConvertAudioPage> {
 
  Future<void> _handleAudioSegment(String segmentPath) async {
     try {
+
+      
       final file = File(segmentPath);
       if (await file.exists() && await file.length() > 0) {
         List<AudioPitch> recordedPitches = await libraryNativaService.loadLibraryAssets(segmentPath);
@@ -60,8 +62,15 @@ class _ConvertAudioPageState extends State<ConvertAudioPage> {
             recordedPitches
           );
           
+// // Ejemplo de prueba
+// final testResult = await libraryNativaService.comparePitches(
+//   [AudioPitch(440.0, "A4", 0.5)],
+//   [AudioPitch(442.0, "A4", 0.5)]
+// );
+// print(testResult);
+
           setState(() {
-            _currentEvaluation = evaluation;
+            _currentEvaluation = evaluation;//evaluation;
           });
         }
         

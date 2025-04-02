@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -7,6 +6,9 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <exception>
+#include <cstdio>  // Para snprintf
+#include <memory>  // Para unique_ptr
 
 using namespace std;
 
@@ -29,7 +31,7 @@ struct WAVHeader {
 struct PitchResult {
     double pitch;
     double duration;
-    char* note;
+    char* note;  // Mantenemos char* para compatibilidad con malloc/free
     double startTime;
     double amplitude;
 };
@@ -91,7 +93,7 @@ double getPitch(const vector<short>& samples, int sampleRate) {
 // Tolerancias configurables
 const double SEMITONE_TOLERANCE = 0.5; // ±0.5 semitonos
 const double TIME_TOLERANCE = 0.1;     // ±100ms
-const double MIN_AMPLITUDE = 0.1;      // Umbral mínimo de amplitud
+//const double MIN_AMPLITUDE = 0.1;      // Umbral mínimo de amplitud
 
 // Función para calcular la diferencia en semitonos entre dos frecuencias
 double semitoneDifference(double freq1, double freq2) {
@@ -103,60 +105,72 @@ extern "C" {
 
     __attribute__((visibility("default")))
     const char* comparePitches(PitchResult* background, int bgCount, 
-        PitchResult* recorded, int recCount) {
+                             PitchResult* recorded, int recCount) {
+        
+        // Buffer para el resultado (evitamos retornar strings temporales)
+        static char resultBuffer[256];
+        
+        try {
+            if (recCount == 0) {
+                snprintf(resultBuffer, sizeof(resultBuffer), "No hay voz detectada");
+                return resultBuffer;
+            }
+            if (bgCount == 0) {
+                snprintf(resultBuffer, sizeof(resultBuffer), "No hay música de fondo");
+                return resultBuffer;
+            }
 
-           
-if (recCount == 0) return "No hay voz detectada";
-if (bgCount == 0) return "No hay música de fondo";
+            int matches = 0;
+            int totalComparisons = 0;
+            double totalDeviation = 0.0;
 
-int matches = 0;
-int totalComparisons = 0;
-double totalDeviation = 0.0;
+            // Comparación por ventanas de tiempo
+            for (int i = 0; i < recCount; i++) {
+                if (recorded[i].note == nullptr) continue;
+                
+                for (int j = 0; j < bgCount; j++) {
+                    if (background[j].note == nullptr) continue;
+                    
+                    if (abs(background[j].startTime - recorded[i].startTime) <= TIME_TOLERANCE) {
+                        totalComparisons++;
+                        double diff = semitoneDifference(background[j].pitch, recorded[i].pitch);
+                        totalDeviation += abs(diff);
+                        
+                        if (abs(diff) < SEMITONE_TOLERANCE) {
+                            matches++;
+                        }
+                    }
+                }
+            }
 
-try {
-    
-// Comparación por ventanas de tiempo
-for (int i = 0; i < recCount; i++) {
-    PitchResult& vocal = recorded[i];
-    
-    // Buscar notas de fondo en el mismo rango de tiempo
-    for (int j = 0; j < bgCount; j++) {
-    PitchResult& bg = background[j];
-    
-    if (abs(bg.startTime - vocal.startTime) <= TIME_TOLERANCE) {
-    totalComparisons++;
-    double diff = semitoneDifference(bg.pitch, vocal.pitch);
-    totalDeviation += abs(diff);
-    
-    if (abs(diff) < SEMITONE_TOLERANCE) {
-      matches++;
-    }
-    }
-    }
-    }
-    
-    if (totalComparisons == 0) {
-    return "No hay coincidencias temporales";
-    }
-    
-    double matchPercentage = (matches * 100.0) / totalComparisons;
-    double avgDeviation = totalDeviation / totalComparisons;
-    
-    // Evaluación basada en los resultados
-    if (matchPercentage >= 80 && avgDeviation < 0.3) {
-    return "Afinado";
-    } else if (matchPercentage >= 50 || avgDeviation < 0.7) {
-    return "Mas o menos";
-    } else {
-    return "Desafinado";
-    }
-    
-  } catch (const exception& e) {
-    return "Error en comparación de tonos ";  ;
-  }
-}
+            if (totalComparisons == 0) {
+                snprintf(resultBuffer, sizeof(resultBuffer), "No hay coincidencias temporales");
+                return resultBuffer;
+            }
 
-    /************************************************************************* */
+            double matchPercentage = (matches * 100.0) / totalComparisons;
+            double avgDeviation = totalDeviation / totalComparisons;
+
+            // Evaluación basada en los resultados
+            if (matchPercentage >= 80 && avgDeviation < 0.3) {
+                snprintf(resultBuffer, sizeof(resultBuffer), "Afinado");
+            } else if (matchPercentage >= 50 || avgDeviation < 0.7) {
+                snprintf(resultBuffer, sizeof(resultBuffer), "Mas o menos");
+            } else {
+                snprintf(resultBuffer, sizeof(resultBuffer), "Desafinado");
+            }
+            
+            return resultBuffer;
+
+        } catch (const std::exception& e) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "Error en comparación");
+            return resultBuffer;
+        } catch (...) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "Error desconocido");
+            return resultBuffer;
+        }
+    }
+
     __attribute__((visibility("default")))
     PitchResult* analyzeWav(const char* filePath, int* resultCount) {
         cout << "Intentando abrir: " << filePath << endl;
@@ -190,9 +204,6 @@ for (int i = 0; i < recCount; i++) {
         *resultCount = numBlocks;
         
         vector<PitchResult> resultList;
-        string prevNote = "";
-        double accumulatedDuration = 0;
-        double prevPitch = -1;
         
         for (int i = 0; i < numBlocks; i++) {
             vector<short> block(samples.begin() + i * blockSize, 
@@ -210,19 +221,33 @@ for (int i = 0; i < recCount; i++) {
             double startTime = i * duration;
             string noteStr = getNoteFromPitch(pitch);
             
+            // Asignar memoria para la nota
+            char* noteCopy = (char*)malloc(noteStr.length() + 1);
+            if (noteCopy == nullptr) {
+                cerr << "Error asignando memoria para nota" << endl;
+                continue;
+            }
+            strncpy(noteCopy, noteStr.c_str(), noteStr.length() + 1);
+            
             PitchResult result;
-            result.note = (char*)malloc(noteStr.length() + 1);
-            strcpy(result.note, noteStr.c_str());
             result.pitch = pitch;
             result.duration = duration;
+            result.note = noteCopy;
             result.startTime = startTime;
             result.amplitude = amplitude;
+            
             resultList.push_back(result);
         }
         
         // Copiamos los resultados finales al arreglo de salida
         *resultCount = resultList.size();
         PitchResult* results = (PitchResult*)malloc(*resultCount * sizeof(PitchResult));
+        if (results == nullptr) {
+            cerr << "Error asignando memoria para resultados" << endl;
+            *resultCount = 0;
+            return nullptr;
+        }
+        
         for (int i = 0; i < *resultCount; i++) {
             results[i] = resultList[i];
         }
@@ -230,17 +255,15 @@ for (int i = 0; i < recCount; i++) {
         return results;
     }
     
-  // Función para liberar memoria
-  __attribute__((visibility("default")))
-void freeResults(PitchResult* results, int count) {
-    if (!results) return;
-    
-    for (int i = 0; i < count; i++) {
-        if (results[i].note) {
-            free(results[i].note);
+    __attribute__((visibility("default")))
+    void freeResults(PitchResult* results, int count) {
+        if (!results) return;
+        
+        for (int i = 0; i < count; i++) {
+            if (results[i].note) {
+                free(results[i].note);
+            }
         }
+        free(results);
     }
-    free(results);
 }
-}
-

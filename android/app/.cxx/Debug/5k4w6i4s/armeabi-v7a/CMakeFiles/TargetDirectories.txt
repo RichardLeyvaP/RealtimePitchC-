@@ -1,3 +1,7 @@
 D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/native-lib.dir
 D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/edit_cache.dir
 D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/rebuild_cache.dir
+D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/list_install_components.dir
+D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/install.dir
+D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/install/local.dir
+D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/armeabi-v7a/CMakeFiles/install/strip.dir

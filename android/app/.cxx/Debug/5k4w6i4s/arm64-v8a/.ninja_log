@@ -1,8 +1,5 @@
 # ninja log v5
-1	2930	7652644995482781	CMakeFiles/native-lib.dir/native-lib.cpp.o	71d10ef199717f17
-2942	3160	7652644997491828	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	ba42e2fdb339817c
-12	2669	7652664198032976	CMakeFiles/native-lib.dir/native-lib.cpp.o	4bcc1a06cbde2db8
-2670	2903	7652664200233514	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	157cfcb574e1dd9a
-11	2155	7652670235251745	CMakeFiles/native-lib.dir/native-lib.cpp.o	4bcc1a06cbde2db8
-2156	2370	7652670237420522	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	157cfcb574e1dd9a
-12	400	7652699748635096	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	157cfcb574e1dd9a
+1	2575	7652969540512377	CMakeFiles/native-lib.dir/native-lib.cpp.o	4bcc1a06cbde2db8
+16	334	7652986415389009	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	157cfcb574e1dd9a
+13	1937	7653011422595256	CMakeFiles/native-lib.dir/native-lib.cpp.o	877f045f28d0ad97
+1938	2139	7653011424517068	D:/Proyectos/Web/RealtimePitchC-/build/app/intermediates/cxx/Debug/5k4w6i4s/obj/arm64-v8a/libnative-lib.so	2e04daeb3b398792
