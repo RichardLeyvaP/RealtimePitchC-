@@ -30,6 +30,8 @@ struct PitchResult {
     double pitch;
     double duration;
     char* note;
+    double startTime;
+    double amplitude;
 };
 
 string getNoteFromPitch(double frequency) {
@@ -86,7 +88,76 @@ double getPitch(const vector<short>& samples, int sampleRate) {
     return (double)peakIndex * sampleRate / n;
 }
 
+// Tolerancias configurables
+const double SEMITONE_TOLERANCE = 0.5; // ±0.5 semitonos
+const double TIME_TOLERANCE = 0.1;     // ±100ms
+const double MIN_AMPLITUDE = 0.1;      // Umbral mínimo de amplitud
+
+// Función para calcular la diferencia en semitonos entre dos frecuencias
+double semitoneDifference(double freq1, double freq2) {
+    if (freq1 <= 0 || freq2 <= 0) return 100.0; // Valor alto para frecuencias inválidas
+    return 12 * log2(freq2 / freq1);
+}
+
 extern "C" {
+
+    __attribute__((visibility("default")))
+    const char* comparePitches(PitchResult* background, int bgCount, 
+        PitchResult* recorded, int recCount) {
+
+           
+if (recCount == 0) return "No hay voz detectada";
+if (bgCount == 0) return "No hay música de fondo";
+
+int matches = 0;
+int totalComparisons = 0;
+double totalDeviation = 0.0;
+
+try {
+    
+// Comparación por ventanas de tiempo
+for (int i = 0; i < recCount; i++) {
+    PitchResult& vocal = recorded[i];
+    
+    // Buscar notas de fondo en el mismo rango de tiempo
+    for (int j = 0; j < bgCount; j++) {
+    PitchResult& bg = background[j];
+    
+    if (abs(bg.startTime - vocal.startTime) <= TIME_TOLERANCE) {
+    totalComparisons++;
+    double diff = semitoneDifference(bg.pitch, vocal.pitch);
+    totalDeviation += abs(diff);
+    
+    if (abs(diff) < SEMITONE_TOLERANCE) {
+      matches++;
+    }
+    }
+    }
+    }
+    
+    if (totalComparisons == 0) {
+    return "No hay coincidencias temporales";
+    }
+    
+    double matchPercentage = (matches * 100.0) / totalComparisons;
+    double avgDeviation = totalDeviation / totalComparisons;
+    
+    // Evaluación basada en los resultados
+    if (matchPercentage >= 80 && avgDeviation < 0.3) {
+    return "Afinado";
+    } else if (matchPercentage >= 50 || avgDeviation < 0.7) {
+    return "Mas o menos";
+    } else {
+    return "Desafinado";
+    }
+    
+  } catch (const exception& e) {
+    return "Error en comparación de tonos ";  ;
+  }
+}
+
+    /************************************************************************* */
+    __attribute__((visibility("default")))
     PitchResult* analyzeWav(const char* filePath, int* resultCount) {
         cout << "Intentando abrir: " << filePath << endl;
         
@@ -126,16 +197,26 @@ extern "C" {
         for (int i = 0; i < numBlocks; i++) {
             vector<short> block(samples.begin() + i * blockSize, 
                               samples.begin() + (i + 1) * blockSize);
+            
+            // Calcular amplitud promedio del bloque
+            double amplitude = 0.0;
+            for (short sample : block) {
+                amplitude += abs(sample);
+            }
+            amplitude /= blockSize;
+            
             double pitch = getPitch(block, sampleRate);
             double duration = blockSize / (double)sampleRate;
+            double startTime = i * duration;
             string noteStr = getNoteFromPitch(pitch);
             
-            // Agregamos cada pitch encontrado como un resultado
             PitchResult result;
             result.note = (char*)malloc(noteStr.length() + 1);
             strcpy(result.note, noteStr.c_str());
             result.pitch = pitch;
             result.duration = duration;
+            result.startTime = startTime;
+            result.amplitude = amplitude;
             resultList.push_back(result);
         }
         
@@ -149,15 +230,17 @@ extern "C" {
         return results;
     }
     
-    void freeResults(PitchResult* results, int count) {
-        if (!results) return;
-        
-        for (int i = 0; i < count; i++) {
-            if (results[i].note) {
-                free(results[i].note);
-            }
+  // Función para liberar memoria
+  __attribute__((visibility("default")))
+void freeResults(PitchResult* results, int count) {
+    if (!results) return;
+    
+    for (int i = 0; i < count; i++) {
+        if (results[i].note) {
+            free(results[i].note);
         }
-        free(results);
     }
+    free(results);
+}
 }
 

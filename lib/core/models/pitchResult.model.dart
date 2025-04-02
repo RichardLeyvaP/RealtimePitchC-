@@ -1,7 +1,5 @@
 import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
-
 base class PitchResult extends Struct {
   @Double()
   external double pitch;
@@ -9,5 +7,11 @@ base class PitchResult extends Struct {
   @Double()
   external double duration;
   
-  external Pointer<Utf8> note;
+  external Pointer<Char> note; // Cambiado a Char
+  
+  @Double()
+  external double startTime;
+  
+  @Double()
+  external double amplitude;
 }

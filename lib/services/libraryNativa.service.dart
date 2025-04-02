@@ -15,11 +15,16 @@ typedef FreeResultsFunc = Void Function(Pointer<PitchResult>, Int32);
 typedef FreeResults = void Function(Pointer<PitchResult>, int);
 
 
+typedef ComparePitchesFunc = Pointer<Utf8> Function(
+    Pointer<PitchResult>, Int32, Pointer<PitchResult>, Int32);
+typedef ComparePitches = Pointer<Utf8> Function(
+    Pointer<PitchResult>, int, Pointer<PitchResult>, int);
+
 class LibraryNativaService {
 
   // Función para obtener la nota como String
 String getNoteFromPitchResult(PitchResult result) {
-  return result.note.toDartString();
+  return result.note.cast<Utf8>().toDartString();
 }
   
 
@@ -176,5 +181,74 @@ for (int i = 0; i < count; i++) {
  
   }
 
-  
+
+
+
+Future<String> comparePitches(List<AudioPitch> background, List<AudioPitch> recorded) async {
+  final dylib = DynamicLibrary.open('libnative-lib.so');
+  final compareFunc = dylib.lookupFunction<ComparePitchesFunc, ComparePitches>('comparePitches');
+
+  // 1. Asignar memoria para los arrays
+  final bgArrayPtr = calloc<PitchResult>(background.length);
+  final recArrayPtr = calloc<PitchResult>(recorded.length);
+
+  // 2. Llenar el array de background
+  for (int i = 0; i < background.length; i++) {
+    final pitch = background[i].pitch;
+    final duration = background[i].duration;
+    final notePtr = background[i].note.toNativeUtf8();
+    
+    // Asignar valores directamente a la estructura
+    bgArrayPtr[i].pitch = pitch;
+    bgArrayPtr[i].duration = duration;
+    bgArrayPtr[i].note = notePtr.cast<Char>(); // Cambiado a Char
+    bgArrayPtr[i].startTime = 0;
+    bgArrayPtr[i].amplitude = 1.0;
+  }
+
+  // 3. Llenar el array de recorded
+  for (int i = 0; i < recorded.length; i++) {
+    final pitch = recorded[i].pitch;
+    final duration = recorded[i].duration;
+    final notePtr = recorded[i].note.toNativeUtf8();
+    
+    recArrayPtr[i].pitch = pitch;
+    recArrayPtr[i].duration = duration;
+    recArrayPtr[i].note = notePtr.cast<Char>(); // Cambiado a Char
+    recArrayPtr[i].startTime = 0;
+    recArrayPtr[i].amplitude = 1.0;
+  }
+
+  // 4. Llamar a la función nativa
+  final resultPtr = compareFunc(
+    bgArrayPtr,
+    background.length,
+    recArrayPtr,
+    recorded.length
+  );
+
+  // 5. Obtener resultado
+  final result = resultPtr.toDartString();
+
+  // 6. Liberar memoria
+  _freePitchArray(bgArrayPtr, background.length);
+  _freePitchArray(recArrayPtr, recorded.length);
+  calloc.free(resultPtr);
+
+  return result;
+}
+
+void _freePitchArray(Pointer<PitchResult> arrayPtr, int length) {
+  for (int i = 0; i < length; i++) {
+    final notePtr = arrayPtr[i].note;
+    calloc.free(notePtr.cast<Utf8>());
+  }
+  calloc.free(arrayPtr);
+}
+
+
+
+
+
+
 }

@@ -164,7 +164,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=Project
+CMAKE_PROJECT_NAME:STATIC=native-lib
 
 //Ranlib
 CMAKE_RANLIB:FILEPATH=C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-ranlib.exe
@@ -230,8 +230,8 @@ CMAKE_SYSTEM_NAME:UNINITIALIZED=Android
 //No help, variable specified on the command line.
 CMAKE_SYSTEM_VERSION:UNINITIALIZED=24
 
-//The CMake toolchain file
-CMAKE_TOOLCHAIN_FILE:FILEPATH=C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/build/cmake/android.toolchain.cmake
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=C:\Users\richa\AppData\Local\Android\sdk\ndk\29.0.13113456\build\cmake\android.toolchain.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -251,8 +251,20 @@ Project_SOURCE_DIR:STATIC=D:/Proyectos/Web/RealtimePitchC-/android/app/src/main/
 //Path to a library.
 log-lib:FILEPATH=C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/24/liblog.so
 
+//Path to a library.
+m-lib:FILEPATH=C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/24/libm.so
+
+//Value Computed by CMake
+native-lib_BINARY_DIR:STATIC=D:/Proyectos/Web/RealtimePitchC-/android/app/.cxx/Debug/5k4w6i4s/arm64-v8a
+
+//Value Computed by CMake
+native-lib_IS_TOP_LEVEL:STATIC=ON
+
 //Dependencies for the target
-native-lib_LIB_DEPENDS:STATIC=general;C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/24/liblog.so;
+native-lib_LIB_DEPENDS:STATIC=general;C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/24/liblog.so;general;C:/Users/richa/AppData/Local/Android/Sdk/ndk/29.0.13113456/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/24/libm.so;
+
+//Value Computed by CMake
+native-lib_SOURCE_DIR:STATIC=D:/Proyectos/Web/RealtimePitchC-/android/app/src/main/cpp
 
 
 ########################

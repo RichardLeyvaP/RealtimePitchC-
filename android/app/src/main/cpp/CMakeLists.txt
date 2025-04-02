@@ -1,40 +1,45 @@
-# cmake_minimum_required(VERSION 3.10)
 
-# # Nombre de tu proyecto (puedes poner "singing_app" o cualquier otro nombre)
-# project(singing_app)
+# cmake_minimum_required(VERSION 3.4.1)
 
-# # Agregar el archivo fuente nativo
-# add_library(
-#     native1_lib
-#     SHARED
-#     src/main/cpp/native_lib2.cpp  # Ruta del archivo cpp que ya tienes
-# )
+# add_library( native-lib SHARED native-lib.cpp )
 
-# # Incluir directorios
-# target_include_directories(
-#     native_lib PRIVATE
-#     ${CMAKE_SOURCE_DIR}/src/main/cpp
-# )
+# find_library( log-lib log )
 
-# # Enlazar bibliotecas necesarias
-# find_library(
-#     log-lib
-#     log
-# )
+# target_link_libraries( native-lib ${log-lib} )
 
-# target_link_libraries(
-#     native_lib
-#     ${log-lib}
-# )
+
+
 
 cmake_minimum_required(VERSION 3.4.1)
 
-add_library( native-lib SHARED native-lib.cpp )
+# Configuración básica
+project(native-lib)
 
-find_library( log-lib log )
+# Habilita C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-target_link_libraries( native-lib ${log-lib} )
+# Crea la biblioteca
+add_library(
+    native-lib
+    SHARED
+    native-lib.cpp
+)
 
+# Bibliotecas necesarias
+find_library(log-lib log)
+find_library(m-lib m)  # Para funciones matemáticas
 
+target_link_libraries(
+    native-lib
+    ${log-lib}
+    ${m-lib}
+)
+
+# Configuración para FFI/Flutter
+set_target_properties(native-lib PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
 
                        
