@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -30,40 +28,45 @@ class ContinuousAudioProcessor {
   IOSink? _audioSink;
   DateTime _lastSegmentTime = DateTime.now();
   final int _segmentDurationMs = 1000; // 1 segundo
-
+  String? _currentRecordingPath;
   ContinuousAudioProcessor(this._onSegmentReady);
+  // Añade este método
+  Future<String?> getCurrentRecordingPath() async {
+    return _currentRecordingPath;
+  }
+
+  Future<String> _getTempPath() async {
+    final dir = await getTemporaryDirectory();
+    return '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+  }
 
   Future<void> startRecording() async {
     if (_isRecording) return;
 
     try {
-      // No necesitamos openRecorder con el paquete record
       final directory = await getTemporaryDirectory();
-      _continuousFilePath = '${directory.path}/continuous_audio_${DateTime.now().millisecondsSinceEpoch}.wav';
-      
-      // Inicializamos el archivo continuo
-      _continuousFile = File(_continuousFilePath!);
-      _audioSink = _continuousFile!.openWrite(mode: FileMode.writeOnly);
-      
-      // Configuramos el encabezado WAV
-      await _writeWavHeader(_audioSink!);
-      
-      // Configuración para el paquete record
+      _continuousFilePath =
+          '${directory.path}/continuous_audio_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+      // Configuración de grabación
       final recordConfig = RecordConfig(
-        encoder: AudioEncoder.wav, // Formato WAV
-        sampleRate: 44100, // Frecuencia de muestreo estándar
-        numChannels: 1, // Mono
-        bitRate: 16, // 16 bits
+        encoder:
+            AudioEncoder.wav, // Esto genera automáticamente una cabecera válida
+        sampleRate: 44100,
+        numChannels: 1,
+        bitRate: 16,
       );
-      
-      await _audioRecorder.start(path:  _continuousFilePath!, recordConfig);
+
+      // Iniciar grabación directamente con record
+      await _audioRecorder.start(path: _continuousFilePath!, recordConfig);
 
       _isRecording = true;
       _segmentCounter = 0;
       _lastSegmentTime = DateTime.now();
 
-      // Timer para procesar segmentos
-      _segmentTimer = Timer.periodic(Duration(milliseconds: 100), (timer) async {
+      // Timer para procesar segmentos cada segundo
+      _segmentTimer =
+          Timer.periodic(Duration(milliseconds: 100), (timer) async {
         if (!_isRecording) {
           timer.cancel();
           return;
@@ -71,13 +74,12 @@ class ContinuousAudioProcessor {
 
         final now = DateTime.now();
         final elapsed = now.difference(_lastSegmentTime).inMilliseconds;
-        
+
         if (elapsed >= _segmentDurationMs) {
           _lastSegmentTime = now;
           await _processSegment();
         }
       });
-
     } catch (e) {
       print("Error al iniciar la grabación: $e");
       _isRecording = false;
@@ -85,119 +87,176 @@ class ContinuousAudioProcessor {
     }
   }
 
-  // Future<void> _processSegment() async {
+  // Future<void> startRecording() async {
+  //   if (_isRecording) return;
+  //   _currentRecordingPath = await _getTempPath();
 
-
-  //   if (!_isRecording || _continuousFile == null) return;
-
-  //   _segmentCounter++;
-  //   final directory = await getTemporaryDirectory();
-  //   final segmentPath = '${directory.path}/segment_${DateTime.now().millisecondsSinceEpoch}.wav';
-    
   //   try {
-  //     // 1. Cerramos temporalmente el archivo continuo para poder leerlo
-  //     await _audioSink?.flush();
-  //     await _audioSink?.close();
-      
-  //     // 2. Extraemos el último segundo de audio
-  //     //await _extractLastSecondToFile(_continuousFilePath!, segmentPath, _segmentDurationMs);
-      
-  //     // 3. Preparamos para seguir escribiendo
-  //     _audioSink = _continuousFile!.openWrite(mode: FileMode.append);
-      
-  //     // 4. Notificamos el nuevo segmento
-  //     _onSegmentReady(segmentPath);
-      
+  //     // No necesitamos openRecorder con el paquete record
+  //     final directory = await getTemporaryDirectory();
+  //     _continuousFilePath = '${directory.path}/continuous_audio_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+  //     // Inicializamos el archivo continuo
+  //     _continuousFile = File(_continuousFilePath!);
+  //     _audioSink = _continuousFile!.openWrite(mode: FileMode.writeOnly);
+
+  //     // Configuramos el encabezado WAV
+  //     await _writeWavHeader(_audioSink!);
+
+  //     // Configuración para el paquete record
+  //     final recordConfig = RecordConfig(
+  //       encoder: AudioEncoder.wav, // Formato WAV
+  //       sampleRate: 44100, // Frecuencia de muestreo estándar
+  //       numChannels: 1, // Mono
+  //       bitRate: 16, // 16 bits
+  //     );
+
+  //     await _audioRecorder.start(path:  _continuousFilePath!, recordConfig);
+
+  //     _isRecording = true;
+  //     _segmentCounter = 0;
+  //     _lastSegmentTime = DateTime.now();
+
+  //     // Timer para procesar segmentos
+  //     _segmentTimer = Timer.periodic(Duration(milliseconds: 100), (timer) async {
+  //       if (!_isRecording) {
+  //         timer.cancel();
+  //         return;
+  //       }
+
+  //       final now = DateTime.now();
+  //       final elapsed = now.difference(_lastSegmentTime).inMilliseconds;
+
+  //       if (elapsed >= _segmentDurationMs) {
+  //         _lastSegmentTime = now;
+  //         await _processSegment();
+  //       }
+  //     });
+
   //   } catch (e) {
-  //     print("Error procesando segmento: $e");
+  //     print("Error al iniciar la grabación: $e");
+  //     _isRecording = false;
+  //     await _cleanup();
   //   }
   // }
 
   Future<void> _processSegment() async {
-  if (!_isRecording || _continuousFile == null || _continuousFilePath == null) {
-    return;
-  }
+    if (!_isRecording || _continuousFilePath == null) return;
 
-  _segmentCounter++;
-  final directory = await getTemporaryDirectory();
-  final segmentPath = '${directory.path}/segment_${DateTime.now().millisecondsSinceEpoch}.wav';
-  
-  try {
-    // 1. Cerrar y sincronizar el archivo
-    await _safeCloseSink();
+    _segmentCounter++;
+    final directory = await getTemporaryDirectory();
+    final segmentPath =
+        '${directory.path}/segment_${DateTime.now().millisecondsSinceEpoch}.wav';
 
-    // 2. Verificar que el archivo existe y tiene contenido
-    final sourceFile = File(_continuousFilePath!);
-    if (!await sourceFile.exists() || await sourceFile.length() <= 44) {
-      print("Archivo fuente no válido");
-      return;
-    }
+    try {
+      final sourceFile = File(_continuousFilePath!);
+      if (!await sourceFile.exists() || await sourceFile.length() <= 44) {
+        print("Archivo fuente no válido");
+        return;
+      }
 
-    // 3. Extraer segmento de audio
-    await _extractLastSecondToFile(_continuousFilePath!, segmentPath, _segmentDurationMs);
+      // Extraer último segundo al nuevo archivo
+      await _extractLastSecondToFile(
+          _continuousFilePath!, segmentPath, _segmentDurationMs);
 
-    // 4. Reabrir el archivo para continuar grabando
-    await _safeReopenSink();
-
-    // 5. Procesar el segmento
-    if (await File(segmentPath).exists()) {
-      _onSegmentReady(segmentPath);
-    }
-
-  } catch (e, stack) {
-    print("Error en _processSegment: $e");
-    print("Stack trace: $stack");
-    await _safeReopenSink(); // Intentar recuperar la grabación
-  }
-}
-
-Future<void> _safeCloseSink() async {
-  try {
-    await _audioSink?.flush();
-    await _audioSink?.close();
-    _audioSink = null;
-  } catch (e) {
-    print("Error cerrando sink: $e");
-  }
-}
-
-Future<void> _safeReopenSink() async {
-  try {
-    if (_continuousFile != null) {
-      _audioSink = _continuousFile!.openWrite(mode: FileMode.append);
-    }
-  } catch (e) {
-    print("Error reabriendo sink: $e");
-    // Intentar recrear el archivo si falla
-    if (_continuousFilePath != null) {
-      _continuousFile = File(_continuousFilePath!);
-      _audioSink = _continuousFile!.openWrite(mode: FileMode.append);
+      if (await File(segmentPath).exists()) {
+        // 🔍 Verificar encabezado WAV (esto es opcional solo para debug)
+        final segmentFile = File(segmentPath);
+        final bytes = await segmentFile.readAsBytes();
+        final header = String.fromCharCodes(bytes.sublist(0, 12));
+        print(
+            "Tamaño del segmento-Encabezado WAV del segmento: $header"); // Debería mostrar "RIFF....WAVE"
+        print("Tamaño del segmento: ${bytes.length} bytes");
+        _onSegmentReady(segmentPath); // Aquí mandas a analizar el segmento
+      }
+    } catch (e, stack) {
+      print("Error en _processSegment: $e");
+      print("Stack trace: $stack");
     }
   }
-}
 
+//   Future<void> _processSegment() async {
+//   if (!_isRecording || _continuousFile == null || _continuousFilePath == null) {
+//     return;
+//   }
 
-Future<void> stopRecording() async {
+//   _segmentCounter++;
+//   final directory = await getTemporaryDirectory();
+//   final segmentPath = '${directory.path}/segment_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+//   try {
+//     // 1. Cerrar y sincronizar el archivo
+//     await _safeCloseSink();
+
+//     // 2. Verificar que el archivo existe y tiene contenido
+//     final sourceFile = File(_continuousFilePath!);
+//     if (!await sourceFile.exists() || await sourceFile.length() <= 44) {
+//       print("Archivo fuente no válido");
+//       return;
+//     }
+
+//     // 3. Extraer segmento de audio
+//     await _extractLastSecondToFile(_continuousFilePath!, segmentPath, _segmentDurationMs);
+
+//     // 4. Reabrir el archivo para continuar grabando
+//     await _safeReopenSink();
+
+//     // 5. Procesar el segmento
+//     if (await File(segmentPath).exists()) {
+//       _onSegmentReady(segmentPath);
+//     }
+
+//   } catch (e, stack) {
+//     print("Error en _processSegment: $e");
+//     print("Stack trace: $stack");
+//     await _safeReopenSink(); // Intentar recuperar la grabación
+//   }
+// }
+
+  Future<void> _safeCloseSink() async {
+    try {
+      await _audioSink?.flush();
+      await _audioSink?.close();
+      _audioSink = null;
+    } catch (e) {
+      print("Error cerrando sink: $e");
+    }
+  }
+
+  Future<void> _safeReopenSink() async {
+    try {
+      if (_continuousFile != null) {
+        _audioSink = _continuousFile!.openWrite(mode: FileMode.append);
+      }
+    } catch (e) {
+      print("Error reabriendo sink: $e");
+      // Intentar recrear el archivo si falla
+      if (_continuousFilePath != null) {
+        _continuousFile = File(_continuousFilePath!);
+        _audioSink = _continuousFile!.openWrite(mode: FileMode.append);
+      }
+    }
+  }
+
+  Future<void> stopRecording() async {
     if (!_isRecording) return;
-    
+
     _isRecording = false;
     _segmentTimer?.cancel();
-    
+
     try {
       await _audioRecorder.stop();
       await _audioSink?.flush();
       await _audioSink?.close();
-      
+
       // Actualizamos el header WAV final
       await _updateWavHeader(_continuousFilePath!);
-      
     } catch (e) {
       print("Error al detener la grabación: $e");
     } finally {
       await _cleanup();
     }
   }
-  
 
   Future<void> _cleanup() async {
     try {
@@ -217,123 +276,119 @@ Future<void> stopRecording() async {
   Future<void> _updateWavHeader(String filePath) async {
     final file = File(filePath);
     final data = await file.readAsBytes();
-    
+
     if (data.length < 44) return; // Archivo demasiado corto
-    
+
     // Actualizamos el tamaño del archivo en el encabezado
     final fileSize = data.length - 8;
     final dataSize = data.length - 44;
-    
+
     final newData = Uint8List.fromList(data);
-    
+
     // Escribimos los valores en little-endian
-    newData.setRange(4, 8, [fileSize & 0xff, (fileSize >> 8) & 0xff, 
-                          (fileSize >> 16) & 0xff, (fileSize >> 24) & 0xff]);
-    
-    newData.setRange(40, 44, [dataSize & 0xff, (dataSize >> 8) & 0xff, 
-                             (dataSize >> 16) & 0xff, (dataSize >> 24) & 0xff]);
-    
+    newData.setRange(4, 8, [
+      fileSize & 0xff,
+      (fileSize >> 8) & 0xff,
+      (fileSize >> 16) & 0xff,
+      (fileSize >> 24) & 0xff
+    ]);
+
+    newData.setRange(40, 44, [
+      dataSize & 0xff,
+      (dataSize >> 8) & 0xff,
+      (dataSize >> 16) & 0xff,
+      (dataSize >> 24) & 0xff
+    ]);
+
     await file.writeAsBytes(newData);
   }
 
+  Future<void> _extractLastSecondToFile(
+      String sourcePath, String targetPath, int durationMs) async {
+    File? sourceFile;
+    RandomAccessFile? sourceRaf;
+    IOSink? targetSink;
 
-Future<void> _extractLastSecondToFile(String sourcePath, String targetPath, int durationMs) async {
-  File? sourceFile;
-  RandomAccessFile? sourceRaf;
-  IOSink? targetSink;
-  
-  try {
-    sourceFile = File(sourcePath);
-    final fileSize = await sourceFile.length();
-    
-    if (fileSize <= 44) {
-      print("Archivo demasiado pequeño para contener datos de audio");
-      return;
-    }
-
-    // Parámetros del audio (16-bit mono a 44100Hz)
-    const sampleRate = 44100;
-    const bytesPerSample = 2;
-    const numChannels = 1;
-    const bytesPerSecond = sampleRate * bytesPerSample * numChannels;
-
-    // Calcular posición de inicio (último segundo)
-    int bytesToCopy = min(bytesPerSecond, fileSize - 44);
-    int startPos = max(44, fileSize - bytesToCopy - 44);
-
-    // Abrir archivos con manejo seguro
-    sourceRaf = await sourceFile.open(mode: FileMode.read);
-    await sourceRaf.setPosition(startPos);
-
-    // Leer datos en bloques para evitar sobrecarga de memoria
-    const blockSize = 4096; // 4KB por bloque
-    final targetFile = File(targetPath);
-    targetSink = targetFile.openWrite();
-
-    // Escribir encabezado WAV
-    await _writeSegmentWavHeader(
-      targetSink,
-      bytesToCopy,
-      sampleRate,
-      bytesPerSample,
-      numChannels
-    );
-
-    // Copiar datos en bloques
-    int remaining = bytesToCopy;
-    while (remaining > 0) {
-      final chunkSize = min(blockSize, remaining);
-      final chunk = await sourceRaf.read(chunkSize);
-      if (chunk.isEmpty) break;
-      
-      targetSink.add(chunk);
-      remaining -= chunk.length;
-    }
-
-    // Asegurar escritura completa
-    await targetSink.flush();
-    
-  } catch (e, stack) {
-    print("Error crítico en _extractLastSecondToFile: $e");
-    print("Stack trace: $stack");
-    throw Exception("Error procesando segmento de audio");
-  } finally {
-    // Cerrar recursos en orden inverso a su apertura
     try {
-      await targetSink?.close();
-    } catch (e) {
-      print("Error cerrando targetSink: $e");
-    }
-    
-    try {
-      await sourceRaf?.close();
-    } catch (e) {
-      print("Error cerrando sourceRaf: $e");
+      sourceFile = File(sourcePath);
+      final fileSize = await sourceFile.length();
+
+      if (fileSize <= 44) {
+        print("Archivo demasiado pequeño para contener datos de audio");
+        return;
+      }
+
+      // Parámetros del audio (16-bit mono a 44100Hz)
+      const sampleRate = 44100;
+      const bytesPerSample = 2;
+      const numChannels = 1;
+      const bytesPerSecond = sampleRate * bytesPerSample * numChannels;
+
+      // Calcular posición de inicio (último segundo)
+      int bytesToCopy = min(bytesPerSecond, fileSize - 44);
+      int startPos = fileSize - bytesToCopy;
+
+      // Abrir archivos con manejo seguro
+      sourceRaf = await sourceFile.open(mode: FileMode.read);
+      await sourceRaf.setPosition(startPos);
+
+      // Leer datos en bloques para evitar sobrecarga de memoria
+      const blockSize = 4096; // 4KB por bloque
+      final targetFile = File(targetPath);
+      targetSink = targetFile.openWrite();
+
+      // Escribir encabezado WAV
+      await _writeSegmentWavHeader(
+          targetSink, bytesToCopy, sampleRate, bytesPerSample, numChannels);
+
+      // Copiar datos en bloques
+      int remaining = bytesToCopy;
+      while (remaining > 0) {
+        final chunkSize = min(blockSize, remaining);
+        final chunk = await sourceRaf.read(chunkSize);
+        if (chunk.isEmpty) break;
+
+        targetSink.add(chunk);
+        remaining -= chunk.length;
+      }
+
+      // Asegurar escritura completa
+      await targetSink.flush();
+    } catch (e, stack) {
+      print("Error crítico en _extractLastSecondToFile: $e");
+      print("Stack trace: $stack");
+      throw Exception("Error procesando segmento de audio");
+    } finally {
+      // Cerrar recursos en orden inverso a su apertura
+      try {
+        await targetSink?.close();
+      } catch (e) {
+        print("Error cerrando targetSink: $e");
+      }
+
+      try {
+        await sourceRaf?.close();
+      } catch (e) {
+        print("Error cerrando sourceRaf: $e");
+      }
     }
   }
-}
 
- 
-  Future<void> _writeSegmentWavHeader(
-    IOSink sink, 
-    int dataSize,
-    int sampleRate,
-    int bytesPerSample,
-    int numChannels
-  ) async {
+  Future<void> _writeSegmentWavHeader(IOSink sink, int dataSize, int sampleRate,
+      int bytesPerSample, int numChannels) async {
     final byteRate = sampleRate * bytesPerSample * numChannels;
     final blockAlign = bytesPerSample * numChannels;
     final bitsPerSample = bytesPerSample * 8;
     final chunkSize = dataSize + 36;
-    
+
     final header = Uint8List(44);
     final view = ByteData.view(header.buffer);
-    
+
     // RIFF header
     header.setRange(0, 4, [0x52, 0x49, 0x46, 0x46]); // "RIFF"
     view.setUint32(4, chunkSize, Endian.little);
     header.setRange(8, 12, [0x57, 0x41, 0x56, 0x45]); // "WAVE"
-    
+
     // fmt subchunk
     header.setRange(12, 16, [0x66, 0x6d, 0x74, 0x20]); // "fmt "
     view.setUint32(16, 16, Endian.little); // Subchunk1Size (16 for PCM)
@@ -343,11 +398,11 @@ Future<void> _extractLastSecondToFile(String sourcePath, String targetPath, int 
     view.setUint32(28, byteRate, Endian.little);
     view.setUint16(32, blockAlign, Endian.little);
     view.setUint16(34, bitsPerSample, Endian.little);
-    
+
     // data subchunk
     header.setRange(36, 40, [0x64, 0x61, 0x74, 0x61]); // "data"
     view.setUint32(40, dataSize, Endian.little);
-    
+
     sink.add(header);
   }
 

@@ -36,6 +36,7 @@ struct PitchResult {
     double amplitude;
 };
 
+
 string getNoteFromPitch(double frequency) {
     if (frequency <= 0) return "Unknown";
     
@@ -91,8 +92,8 @@ double getPitch(const vector<short>& samples, int sampleRate) {
 }
 
 // Tolerancias configurables
-const double SEMITONE_TOLERANCE = 0.5; // ±0.5 semitonos
-const double TIME_TOLERANCE = 0.1;     // ±100ms
+//const double SEMITONE_TOLERANCE = 0.5; // ±0.5 semitonos
+//const double TIME_TOLERANCE = 0.2;     // ±100ms
 //const double MIN_AMPLITUDE = 0.1;      // Umbral mínimo de amplitud
 
 // Función para calcular la diferencia en semitonos entre dos frecuencias
@@ -104,72 +105,175 @@ double semitoneDifference(double freq1, double freq2) {
 extern "C" {
 
     __attribute__((visibility("default")))
-    const char* comparePitches(PitchResult* background, int bgCount, 
-                             PitchResult* recorded, int recCount) {
+    // const char* comparePitches(PitchResult* background, int bgCount, 
+    //                          PitchResult* recorded, int recCount) {
         
-        // Buffer para el resultado (evitamos retornar strings temporales)
-        static char resultBuffer[256];
+    //     // Buffer para el resultado (evitamos retornar strings temporales)
+    //     static char resultBuffer[256];
         
-        try {
-            if (recCount == 0) {
-                snprintf(resultBuffer, sizeof(resultBuffer), "No hay voz detectada");
-                return resultBuffer;
-            }
-            if (bgCount == 0) {
-                snprintf(resultBuffer, sizeof(resultBuffer), "No hay música de fondo");
-                return resultBuffer;
-            }
+    //     try {
+    //         if (recCount == 0) {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "No hay voz detectada");
+    //             return resultBuffer;
+    //         }
+    //         if (bgCount == 0) {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "No hay música de fondo");
+    //             return resultBuffer;
+    //         }
 
-            int matches = 0;
-            int totalComparisons = 0;
-            double totalDeviation = 0.0;
+    //         int matches = 0;
+    //         int totalComparisons = 0;
+    //         double totalDeviation = 0.0;
 
-            // Comparación por ventanas de tiempo
-            for (int i = 0; i < recCount; i++) {
-                if (recorded[i].note == nullptr) continue;
+    //         // Comparación por ventanas de tiempo
+    //         for (int i = 0; i < recCount; i++) {
+    //             if (recorded[i].note == nullptr) continue;
                 
-                for (int j = 0; j < bgCount; j++) {
-                    if (background[j].note == nullptr) continue;
+    //             for (int j = 0; j < bgCount; j++) {
+    //                 if (background[j].note == nullptr) continue;
                     
-                    if (abs(background[j].startTime - recorded[i].startTime) <= TIME_TOLERANCE) {
-                        totalComparisons++;
-                        double diff = semitoneDifference(background[j].pitch, recorded[i].pitch);
-                        totalDeviation += abs(diff);
+    //                 if (abs(background[j].startTime - recorded[i].startTime) <= TIME_TOLERANCE) {
+    //                     totalComparisons++;
+    //                     double diff = semitoneDifference(background[j].pitch, recorded[i].pitch);
+    //                     totalDeviation += abs(diff);
                         
-                        if (abs(diff) < SEMITONE_TOLERANCE) {
-                            matches++;
-                        }
+    //                     if (abs(diff) < SEMITONE_TOLERANCE) {
+    //                         matches++;
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         if (totalComparisons == 0) {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "No hay coincidencias temporales");
+    //             return resultBuffer;
+    //         }
+
+    //         double matchPercentage = (matches * 100.0) / totalComparisons;
+    //         double avgDeviation = totalDeviation / totalComparisons;
+
+    //         // Evaluación basada en los resultados
+    //         if (matchPercentage >= 80 && avgDeviation < 0.3) {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "Afinado");
+    //         } else if (matchPercentage >= 50 || avgDeviation < 0.7) {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "Mas o menos");
+    //         } else {
+    //             snprintf(resultBuffer, sizeof(resultBuffer), "Desafinado");
+    //         }
+            
+    //         return resultBuffer;
+
+    //     } catch (const std::exception& e) {
+    //         snprintf(resultBuffer, sizeof(resultBuffer), "Error en comparación");
+    //         return resultBuffer;
+    //     } catch (...) {
+    //         snprintf(resultBuffer, sizeof(resultBuffer), "Error desconocido");
+    //         return resultBuffer;
+    //     }
+    // }
+
+// Copia de tu función para test
+const char* comparePitches(PitchResult* background, int bgCount,
+    PitchResult* recorded, int recCount, int nivel) {
+
+    static char resultBuffer[256];
+
+    try {
+        if (recCount == 0) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "No hay voz detectada");
+            return resultBuffer;
+        }
+        if (bgCount == 0) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "No hay música de fondo");
+            return resultBuffer;
+        }
+
+        // Parámetros según nivel
+        double semitoneThreshold;
+        double avgDeviationThreshold;
+        double matchPercentageThreshold;
+
+        switch (nivel) {
+        case 1: // Fácil
+            semitoneThreshold = 1.0;
+            avgDeviationThreshold = 1.0;
+            matchPercentageThreshold = 30.0;
+            break;
+        case 2: // Intermedio
+            semitoneThreshold = 0.5;
+            avgDeviationThreshold = 0.7;
+            matchPercentageThreshold = 50.0;
+            break;
+        case 3: // Profesional
+            semitoneThreshold = 0.3;
+            avgDeviationThreshold = 0.3;
+            matchPercentageThreshold = 80.0;
+            break;
+        default: // Por defecto, usar intermedio
+            semitoneThreshold = 0.5;
+            avgDeviationThreshold = 0.7;
+            matchPercentageThreshold = 50.0;
+            break;
+        }
+
+        int matches = 0;
+        int totalComparisons = 0;
+        double totalDeviation = 0.0;
+
+        for (int i = 0; i < recCount; i++) {
+            if (recorded[i].note == nullptr) continue;
+
+            for (int j = 0; j < bgCount; j++) {
+                if (background[j].note == nullptr) continue;
+
+                if (abs(background[j].startTime - recorded[i].startTime) <= 0.2) {
+                    totalComparisons++;
+                    double diff = semitoneDifference(background[j].pitch, recorded[i].pitch);
+                    totalDeviation += abs(diff);
+                    printf("Comparando: Fondo %.2f Hz vs Grabado %.2f Hz -> %.3f semitonos\n",
+                        background[j].pitch, recorded[i].pitch, diff);
+
+                    if (abs(diff) < semitoneThreshold) {
+                        matches++;
                     }
                 }
             }
+        }
 
-            if (totalComparisons == 0) {
-                snprintf(resultBuffer, sizeof(resultBuffer), "No hay coincidencias temporales");
-                return resultBuffer;
-            }
-
-            double matchPercentage = (matches * 100.0) / totalComparisons;
-            double avgDeviation = totalDeviation / totalComparisons;
-
-            // Evaluación basada en los resultados
-            if (matchPercentage >= 80 && avgDeviation < 0.3) {
-                snprintf(resultBuffer, sizeof(resultBuffer), "Afinado");
-            } else if (matchPercentage >= 50 || avgDeviation < 0.7) {
-                snprintf(resultBuffer, sizeof(resultBuffer), "Mas o menos");
-            } else {
-                snprintf(resultBuffer, sizeof(resultBuffer), "Desafinado");
-            }
-            
-            return resultBuffer;
-
-        } catch (const std::exception& e) {
-            snprintf(resultBuffer, sizeof(resultBuffer), "Error en comparación");
-            return resultBuffer;
-        } catch (...) {
-            snprintf(resultBuffer, sizeof(resultBuffer), "Error desconocido");
+        if (totalComparisons == 0) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "No hay coincidencias temporales");
             return resultBuffer;
         }
+
+        double matchPercentage = (matches * 100.0) / totalComparisons;
+        double avgDeviation = totalDeviation / totalComparisons;
+        // Imprimir para depuración
+        printf("Matches: %d\n", matches);
+        printf("Total Comparisons: %d\n", totalComparisons);
+        printf("Match Percentage: %.2f%%\n", matchPercentage);
+        printf("Average Deviation: %.3f semitonos\n", avgDeviation);
+
+        if (matchPercentage >= matchPercentageThreshold && avgDeviation < avgDeviationThreshold) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "Afinado");
+        }
+        else if (matchPercentage >= matchPercentageThreshold / 2 || avgDeviation < avgDeviationThreshold * 1.5) {
+            snprintf(resultBuffer, sizeof(resultBuffer), "Más o menos");
+        }
+        else {
+            snprintf(resultBuffer, sizeof(resultBuffer), "Desafinado");
+        }
+
+        return resultBuffer;
     }
+    catch (...) {
+        snprintf(resultBuffer, sizeof(resultBuffer), "Error en comparación");
+        return resultBuffer;
+    }
+}
+
+
+
+
 
     __attribute__((visibility("default")))
     PitchResult* analyzeWav(const char* filePath, int* resultCount) {

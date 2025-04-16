@@ -13,6 +13,7 @@ base class PitchResult extends Struct {
   
   @Double()
   external double startTime;
+
   
   @Double()
   external double amplitude;
